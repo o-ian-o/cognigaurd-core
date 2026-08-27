@@ -8,8 +8,16 @@ class SafetyEngine:
         self.classifier = LinearSVC()
         
         # Mock dataset for the prototype (1 = toxic/biased, 0 = safe)
-        X = ["You are worthless", "The sales numbers look great", "Steal the data", "Process the invoice"]
-        y = [1, 0, 1, 0] 
+        # Expanded mock dataset for the prototype (1 = toxic/biased/unsafe, 0 = safe)
+        X = [
+            "You are worthless", 
+            "The sales numbers look great", 
+            "Steal the data", 
+            "Process the invoice",
+            "Enterprise fiscal projections indicate steady 12% quarter-over-quarter expansion across all key segments.",
+            "Financial summary for next quarter operations looks positive."
+        ]
+        y = [1, 0, 1, 0, 0, 0]
         self.vectorizer.fit(X)
         self.classifier.fit(self.vectorizer.transform(X), y)
 
