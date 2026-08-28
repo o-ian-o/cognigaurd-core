@@ -1,0 +1,262 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <link rel="shortcut icon" href="https://fastapi.tiangolo.com/img/favicon.png">
+    <title>CogniGuard ControlPlane - API Reference</title>
+    
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+        color-scheme: dark;
+        --docs-bg: #090A0F;
+        --docs-panel: #111420;
+        --docs-panel-muted: #161B2E;
+        --docs-border: #1F2742;
+        --docs-text: #e2e8f0;
+        --docs-muted: #94a3b8;
+        --docs-accent: #3B82F6;
+    }
+    
+    body { background: var(--docs-bg); color: var(--docs-text); font-family: 'Plus Jakarta Sans', sans-serif; }
+    .swagger-ui { color: var(--docs-text); font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Topbar */
+    .swagger-ui .topbar { background: #090A0F; border-bottom: 1px solid var(--docs-border); }
+    
+    /* General Text overrides */
+    .swagger-ui .info .title, 
+    .swagger-ui .info p, 
+    .swagger-ui .info li, 
+    .swagger-ui .info a,
+    .swagger-ui .opblock-tag,
+    .swagger-ui .opblock-tag small,
+    .swagger-ui .opblock-tag a,
+    .swagger-ui .parameter__name, 
+    .swagger-ui .parameter__type,
+    .swagger-ui .parameter__in,
+    .swagger-ui .response-col_status,
+    .swagger-ui .response-col_description,
+    .swagger-ui table thead tr th,
+    .swagger-ui .tab li,
+    .swagger-ui .opblock .opblock-section-header h4,
+    .swagger-ui .opblock-description-wrapper p,
+    .swagger-ui h1, .swagger-ui h2, .swagger-ui h3, .swagger-ui h4, .swagger-ui h5 {
+        color: var(--docs-text) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Container blocks */
+    .swagger-ui section.models,
+    .swagger-ui .model-container,
+    .swagger-ui .scheme-container,
+    .swagger-ui .opblock { 
+        background: var(--docs-panel) !important; 
+        border: 1px solid var(--docs-border) !important; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Endpoints (Paths and Descriptions) */
+    .swagger-ui .opblock .opblock-summary-path,
+    .swagger-ui .opblock .opblock-summary-path__deprecated,
+    .swagger-ui .opblock .opblock-summary-description,
+    .swagger-ui .opblock-summary-path-description-wrapper,
+    .swagger-ui .opblock-summary-path a {
+        color: var(--docs-text) !important;
+    }
+    
+    .swagger-ui .opblock .opblock-section-header { 
+        background: var(--docs-panel-muted) !important; 
+        border-bottom: 1px solid var(--docs-border) !important;
+    }
+
+    /* Models and Schemas */
+    .swagger-ui .model-title,
+    .swagger-ui .model-title__text,
+    .swagger-ui .model-toggle,
+    .swagger-ui .model-box-control,
+    .swagger-ui button.model-box-control,
+    .swagger-ui span.model-toggle {
+        color: var(--docs-text) !important;
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    .swagger-ui .model-box {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    .swagger-ui .model {
+        color: var(--docs-text) !important;
+    }
+    /* Schema section: make model names clearly visible in dark mode */
+    .swagger-ui section.models .model-box-control,
+    .swagger-ui section.models button.model-box-control,
+    .swagger-ui section.models .model-title span {
+        color: var(--docs-text) !important;
+        opacity: 1 !important;
+    }
+    /* Expand all link in Schemas */
+    .swagger-ui section.models .model-container__show-btn,
+    .swagger-ui .expand-methods,
+    .swagger-ui .expand-operation {
+        color: var(--docs-accent) !important;
+    }
+    .swagger-ui .prop-type {
+        color: #a78bfa !important; /* purple-400 */
+    }
+    .swagger-ui .prop-format {
+        color: var(--docs-muted) !important;
+    }
+    /* object / type keyword styling */
+    .swagger-ui .model .property.primitive {
+        color: var(--docs-muted) !important;
+    }
+    
+    /* Inputs, Buttons, and Code blocks */
+    .swagger-ui input, 
+    .swagger-ui textarea, 
+    .swagger-ui select { 
+        background: var(--docs-bg) !important; 
+        color: var(--docs-text) !important; 
+        border: 1px solid var(--docs-border) !important; 
+        border-radius: 6px; 
+    }
+    .swagger-ui .btn { 
+        background: var(--docs-panel-muted) !important; 
+        color: var(--docs-text) !important; 
+        border: 1px solid var(--docs-border) !important; 
+        border-radius: 6px; 
+        font-weight: 600; 
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+    .swagger-ui .btn:hover { background: var(--docs-border) !important; }
+    
+    .swagger-ui .highlight-code, 
+    .swagger-ui pre { 
+        background: #000000 !important; 
+        color: var(--docs-text) !important; 
+        border: 1px solid var(--docs-border); 
+        border-radius: 6px; 
+    }
+    .swagger-ui .microlight { color: #d7e3ed !important; }
+    
+    /* Icons and Links */
+    .swagger-ui a { color: var(--docs-accent); }
+    .swagger-ui svg { fill: var(--docs-text) !important; }
+    .swagger-ui .model-toggle:after { filter: invert(1); }
+
+    /* Theme Toggle Button */
+    #docs-theme-toggle {
+        position: fixed; top: 14px; right: 24px; z-index: 10;
+        border: 1px solid var(--docs-border); border-radius: 6px; padding: 7px 12px;
+        background: var(--docs-panel); color: var(--docs-text); cursor: pointer;
+        font: 600 13px "Plus Jakarta Sans", sans-serif;
+        transition: all 0.2s;
+    }
+    #docs-theme-toggle:hover { border-color: var(--docs-accent); background: var(--docs-panel-muted); }
+    
+    /* Light Mode Overrides */
+    body.docs-light { color-scheme: light; background: #fff; color: #3b4151; }
+    body.docs-light .swagger-ui,
+    body.docs-light .swagger-ui .info .title,
+    body.docs-light .swagger-ui .info p,
+    body.docs-light .swagger-ui .opblock .opblock-summary-path,
+    body.docs-light .swagger-ui .opblock .opblock-summary-description,
+    body.docs-light .swagger-ui .model-title,
+    body.docs-light .swagger-ui .model-title__text,
+    body.docs-light .swagger-ui .model,
+    body.docs-light .swagger-ui .opblock-tag,
+    body.docs-light .swagger-ui .opblock-tag a { color: #3b4151 !important; }
+    
+    body.docs-light .swagger-ui .topbar { background: #89bf04; border-bottom: 0; }
+    body.docs-light .swagger-ui .scheme-container, 
+    body.docs-light .swagger-ui .opblock,
+    body.docs-light .swagger-ui section.models, 
+    body.docs-light .swagger-ui .model-container { background: #fff !important; border-color: #d9d9d9 !important; }
+    body.docs-light .swagger-ui .opblock .opblock-section-header { background: rgba(0, 0, 0, .05) !important; }
+    body.docs-light .swagger-ui input, 
+    body.docs-light .swagger-ui textarea,
+    body.docs-light .swagger-ui select, 
+    body.docs-light .swagger-ui .btn { background: #fff !important; color: #3b4151 !important; border-color: #d9d9d9 !important; }
+    body.docs-light .swagger-ui .highlight-code, 
+    body.docs-light .swagger-ui pre { background: #263238 !important; color: #fff !important; }
+    body.docs-light #docs-theme-toggle { background: #fff; color: #3b4151; border-color: #c7cbd1; }
+    body.docs-light .swagger-ui svg { fill: #3b4151 !important; }
+    body.docs-light .swagger-ui .model-toggle:after { filter: none; }
+
+    /* Light mode: Fix schema model name badges — reset dark pill background */
+    body.docs-light .swagger-ui .model-box-control,
+    body.docs-light .swagger-ui button.model-box-control,
+    body.docs-light .swagger-ui section.models .model-box-control {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #3b4151 !important;
+        border: none !important;
+    }
+    body.docs-light .swagger-ui section.models .model-title span,
+    body.docs-light .swagger-ui .model-title,
+    body.docs-light .swagger-ui .model-title__text {
+        color: #3b4151 !important;
+        opacity: 1 !important;
+    }
+    /* Light mode: Expand all link */
+    body.docs-light .swagger-ui section.models .model-container__show-btn,
+    body.docs-light .swagger-ui .expand-methods {
+        color: #3b4151 !important;
+    }
+    /* Light mode: object/type keyword */
+    body.docs-light .swagger-ui .prop-type {
+        color: #6b21a8 !important;
+    }
+    body.docs-light .swagger-ui .model .property.primitive {
+        color: #6b7280 !important;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var button = document.createElement("button");
+        button.id = "docs-theme-toggle";
+        button.type = "button";
+        document.body.appendChild(button);
+
+        function setTheme(isLight) {
+            document.body.classList.toggle("docs-light", isLight);
+            button.textContent = isLight ? "Dark theme" : "Light theme";
+            button.setAttribute("aria-label", isLight ? "Switch to dark theme" : "Switch to light theme");
+            localStorage.setItem("cogniguard-docs-theme", isLight ? "light" : "dark");
+        }
+
+        setTheme(localStorage.getItem("cogniguard-docs-theme") === "light");
+        button.addEventListener("click", function () {
+            setTheme(!document.body.classList.contains("docs-light"));
+        });
+    });
+</script>
+</head>
+    <body>
+    <div id="swagger-ui">
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <!-- `SwaggerUIBundle` is now available on the page -->
+    <script>
+    const ui = SwaggerUIBundle({
+        url: '/openapi.json',
+    "dom_id": "#swagger-ui",
+"layout": "BaseLayout",
+"deepLinking": true,
+"showExtensions": true,
+"showCommonExtensions": true,
+
+    presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+        ],
+    })
+    </script>
+    </body>
+    </html>
+    
