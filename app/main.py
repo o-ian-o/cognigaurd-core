@@ -114,20 +114,135 @@ async def process_prompt(req: PromptRequest):
     }
 
 @app.get("/docs", include_in_schema=False)
+@app.get("/api-docs", include_in_schema=False)
 async def custom_swagger_ui_html():
-    # 1. Get the default Swagger UI HTML structure
-    response = get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title=f"{app.title} - API Reference"
-    )
-    
-    # 2. Inject a highly stable, FastAPI-specific dark theme via GitHub CDN
-    dark_theme_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Itz-fork/Fastapi-Swagger-UI-Dark/assets/swagger_dark.css">'
-    
-    html = response.body.decode("utf-8")
-    html = html.replace("</head>", f"{dark_theme_css}</head>")
-    
-    return HTMLResponse(content=html)
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CogniGuard | API Reference</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+        <style>
+            body { 
+                margin: 0; 
+                padding: 0; 
+                font-family: 'Plus Jakarta Sans', sans-serif;
+            }
+            
+            /* Customizing Scalar variables to match CogniGuard brand */
+            :root {
+                --scalar-color-accent: #3B82F6;
+                --scalar-font: 'Plus Jakarta Sans', sans-serif;
+                --scalar-font-code: 'JetBrains Mono', monospace;
+            }
+            
+            /* Dark Mode Overrides */
+            .dark-mode {
+                --scalar-background-1: #090A0F;
+                --scalar-background-2: #111420;
+                --scalar-background-3: #161B2E;
+                --scalar-border-color: #1F2742;
+                --scalar-color-1: #e2e8f0;
+                --scalar-color-2: #94a3b8;
+                --scalar-color-3: #64748b;
+            }
+            
+            /* Light Mode Overrides */
+            .light-mode {
+                --scalar-background-1: #ffffff;
+                /* Lighter beige for the side panel */
+                --scalar-background-2: #FCFBF7;
+                --scalar-background-3: #F3F1EB;
+                --scalar-border-color: #E2E8F0;
+                --scalar-color-1: #0f172a;
+                --scalar-color-2: #475569;
+                --scalar-color-3: #64748b;
+
+                /* Sidebar specific overrides */
+                --scalar-sidebar-background-1: #FCFBF7;
+                --scalar-sidebar-item-hover-background: #F3F1EB;
+                --scalar-sidebar-item-active-background: #EBE8E0;
+                
+                /* Vibrant colors for badges and tags */
+                --scalar-color-green: #059669;
+                --scalar-color-orange: #EA580C;
+                --scalar-color-blue: #2563EB;
+            }
+            
+            /* Premium styling for top badges (v1.0.0, OAS 3.1) - Light Mode */
+            .light-mode .scalar-api-reference a[target="_blank"],
+            .light-mode .scalar-api-reference a[href$=".json"],
+            .light-mode .scalar-api-reference span[class*="version"],
+            .light-mode .scalar-api-reference span[class*="badge"],
+            .light-mode .scalar-api-reference .t-doc__header span,
+            .light-mode [class*="scalar-badge"] {
+                background-color: #4F46E5 !important;
+                color: #FFFFFF !important;
+                border: none !important;
+                border-radius: 9999px !important;
+                padding: 5px 14px !important;
+                font-family: 'JetBrains Mono', monospace !important;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+                text-decoration: none !important;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4) !important;
+                transition: all 0.2s ease !important;
+            }
+
+            .light-mode .scalar-api-reference a[target="_blank"]:hover,
+            .light-mode .scalar-api-reference a[href$=".json"]:hover {
+                background-color: #4338CA !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.5) !important;
+            }
+
+            /* Premium styling for top badges (v1.0.0, OAS 3.1) - Dark Mode */
+            .dark-mode .scalar-api-reference a[target="_blank"],
+            .dark-mode .scalar-api-reference a[href$=".json"],
+            .dark-mode .scalar-api-reference span[class*="version"],
+            .dark-mode .scalar-api-reference span[class*="badge"],
+            .dark-mode .scalar-api-reference .t-doc__header span,
+            .dark-mode [class*="scalar-badge"] {
+                background-color: #6366F1 !important;
+                color: #FFFFFF !important;
+                border: none !important;
+                border-radius: 9999px !important;
+                padding: 5px 14px !important;
+                font-family: 'JetBrains Mono', monospace !important;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+                text-decoration: none !important;
+                box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4) !important;
+                transition: all 0.2s ease !important;
+            }
+
+            .dark-mode .scalar-api-reference a[target="_blank"]:hover,
+            .dark-mode .scalar-api-reference a[href$=".json"]:hover {
+                background-color: #4F46E5 !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.5) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Scalar injects the UI here -->
+        <script 
+            id="api-reference" 
+            data-url="/openapi.json"
+            data-theme="moon"
+            data-layout="modern">
+        </script>
+        
+        <!-- Load the Scalar JS standalone build -->
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
