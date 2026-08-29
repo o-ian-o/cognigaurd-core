@@ -42,23 +42,25 @@ async def process_prompt(req: PromptRequest):
             "status": "APPROVED",
             "action": "SERVED_FROM_CACHE",
             "response": cache_result["data"],
-            "metrics": {"latency_ms": latency_ms, "compute_saved": "100%", "cost_tier": "Zero-Compute"},
+            "metrics": {"latency_ms": latency_ms, "inspection_ms": 0, "compute_saved": "100%", "cost_tier": "Zero-Compute"},
             "checks": {"responsibility": "SKIPPED", "performance": "100% Match", "cost": "Cache Intercept"}
         }
 
     # 2. Main LLM Execution
+    llm_start = time.perf_counter()
     raw_llm_response = await simulate_llm(req.prompt)
-    latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
     
     # 3. LIVE REDACTION ENGINE (The Winning Feature)
-    # If it hallucinates a specific metric but the rest is safe, we edit it instead of blocking.
+    inspect_start = time.perf_counter()
     if "42%" in raw_llm_response:
         redacted_response = raw_llm_response.replace("42%", "[REDACTED: UNVERIFIED INTERNAL METRIC]")
+        inspection_ms = round((time.perf_counter() - inspect_start) * 1000, 2)
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
         return {
             "status": "EDITED",
             "action": "AUTO_REDACTED",
             "response": redacted_response,
-            "metrics": {"latency_ms": latency_ms, "compute_saved": "0%", "cost_tier": "Standard LLM Tier"},
+            "metrics": {"latency_ms": latency_ms, "inspection_ms": inspection_ms, "compute_saved": "0%", "cost_tier": "Standard LLM Tier"},
             "checks": {
                 "responsibility": "PASSED (Scrubbed)", 
                 "performance": "MINOR HALLUCINATION REPAIRED", 
@@ -68,6 +70,8 @@ async def process_prompt(req: PromptRequest):
 
     # 4. Responsibility & Safety Layer Scan
     safety_result = safety_engine.scan(raw_llm_response)
+    inspection_ms = round((time.perf_counter() - inspect_start) * 1000, 2)
+    latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
     
     # 5. Mitigation Engine Decision Routing
     if safety_result["status"] == "block":
@@ -75,7 +79,7 @@ async def process_prompt(req: PromptRequest):
             "status": "BLOCKED",
             "action": "HARD_INTERCEPT",
             "response": "[TRANSMISSION TERMINATED BY COGNIGUARD - DATA EXFILTRATION PREVENTED]",
-            "metrics": {"latency_ms": latency_ms, "compute_saved": "0%", "cost_tier": "Standard Tier"},
+            "metrics": {"latency_ms": latency_ms, "inspection_ms": inspection_ms, "compute_saved": "0%", "cost_tier": "Standard Tier"},
             "checks": {"responsibility": f"FAILED: {safety_result['reason']}", "performance": "Stream Halted", "cost": "Standard"}
         }
     
@@ -84,7 +88,7 @@ async def process_prompt(req: PromptRequest):
             "status": "ESCALATED",
             "action": "HUMAN_IN_THE_LOOP_QUEUE",
             "response": "[CONTENT HELD FOR HUMAN AUDIT] - Ambiguous policy violation flagged.",
-            "metrics": {"latency_ms": latency_ms, "compute_saved": "0%", "cost_tier": "Standard Tier"},
+            "metrics": {"latency_ms": latency_ms, "inspection_ms": inspection_ms, "compute_saved": "0%", "cost_tier": "Standard Tier"},
             "checks": {"responsibility": f"FLAGGED: {safety_result['reason']}", "performance": "Stream Paused", "cost": "Standard"}
         }
 
@@ -92,16 +96,99 @@ async def process_prompt(req: PromptRequest):
         "status": "APPROVED",
         "action": "STREAM_DELIVERED",
         "response": raw_llm_response,
-        "metrics": {"latency_ms": latency_ms, "compute_saved": "0%", "cost_tier": "Optimized Gateway Routing"},
+        "metrics": {"latency_ms": latency_ms, "inspection_ms": inspection_ms, "compute_saved": "0%", "cost_tier": "Optimized Gateway Routing"},
         "checks": {"responsibility": "PASSED", "performance": "Validated Output", "cost": "Optimized Routing"}
     }
 
 @app.get("/docs", include_in_schema=False)
+@app.get("/api-docs", include_in_schema=False)
 async def custom_swagger_ui_html():
-    response = get_swagger_ui_html(openapi_url=app.openapi_url, title=f"{app.title} - API Reference")
-    dark_theme_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Itz-fork/Fastapi-Swagger-UI-Dark/assets/swagger_dark.css">'
-    html = response.body.decode("utf-8").replace("</head>", f"{dark_theme_css}</head>")
-    return HTMLResponse(content=html)
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>CogniGuard API Reference</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        
+        <style>
+            /* Base Typography */
+            body { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+            code, pre, .scalar-api-reference .scalar-mono { font-family: 'JetBrains Mono', monospace !important; }
+
+            /* 
+             * COGNIGUARD PREMIUM THEME SYSTEM
+             * Completely overrides Scalar's default tokens for a bespoke feel.
+             */
+            
+            /* --- LIGHT MODE (Premium Beige & Indigo) --- */
+            body.light-mode, .light-mode .scalar-api-reference {
+                --theme-color-1: #4F46E5 !important; /* Premium Indigo */
+                --theme-color-2: #1E293B !important; 
+                --theme-color-3: #475569 !important; 
+                
+                --theme-background-1: #FAFAFA !important; /* Crisp White/Gray */
+                --theme-background-2: #F8F6F0 !important; /* Very Light Beige Sidebar */
+                --theme-background-3: #E2E8F0 !important; 
+                
+                --theme-border-color: #E2E8F0 !important;
+            }
+
+            /* --- DARK MODE (Obsidian & Blue) --- */
+            body.dark-mode, .dark-mode .scalar-api-reference {
+                --theme-color-1: #3B82F6 !important; /* Vibrant Blue */
+                --theme-color-2: #F8FAFC !important;
+                --theme-color-3: #94A3B8 !important;
+                
+                --theme-background-1: #090A0F !important; /* Obsidian */
+                --theme-background-2: #111420 !important; /* Surface */
+                --theme-background-3: #161B2E !important; /* Surface Card */
+                
+                --theme-border-color: #1F2742 !important;
+            }
+
+            /* Custom Badges (v1.0.0, OAS 3.1) - Solid & Premium */
+            .scalar-api-reference a[target="_blank"],
+            .scalar-api-reference a[href$=".json"] {
+                background-color: #4F46E5 !important;
+                color: white !important;
+                border: none !important;
+                font-weight: 600 !important;
+                border-radius: 6px !important;
+                padding: 4px 10px !important;
+                transition: all 0.2s ease !important;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important;
+            }
+
+            /* Hover effects for badges */
+            .light-mode .scalar-api-reference a[target="_blank"]:hover,
+            .light-mode .scalar-api-reference a[href$=".json"]:hover,
+            .dark-mode .scalar-api-reference a[target="_blank"]:hover,
+            .dark-mode .scalar-api-reference a[href$=".json"]:hover {
+                background-color: #4338CA !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.4) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Scalar injects the UI here -->
+        <script 
+            id="api-reference" 
+            data-url="/openapi.json"
+            data-theme="moon"
+            data-layout="modern">
+        </script>
+        
+        <!-- Load the Scalar JS standalone build -->
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
@@ -117,7 +204,16 @@ async def dashboard():
     <script>
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"'], mono: ['"JetBrains Mono"'] }, colors: { obsidian: '#090A0F', surface: '#111420', 'surface-card': '#161B2E', 'border-subtle': '#1F2742' } } } }
     </script>
-    <style>body { background-color: #090A0F; } .glow { box-shadow: 0 0 35px -10px rgba(59, 130, 246, 0.25); }</style>
+    <style>
+        body { background-color: #090A0F; } .glow { box-shadow: 0 0 35px -10px rgba(59, 130, 246, 0.25); }
+        .gauge-track { background: #1F2742; border-radius: 9999px; height: 8px; overflow: hidden; position: relative; }
+        .gauge-fill { height: 100%; border-radius: 9999px; width: 0%; transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease; }
+        .gauge-fill.safe    { background: linear-gradient(90deg, #059669, #10B981); }
+        .gauge-fill.warn    { background: linear-gradient(90deg, #D97706, #F59E0B); }
+        .gauge-fill.danger  { background: linear-gradient(90deg, #DC2626, #EF4444); }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .scanning-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+    </style>
 </head>
 <body class="text-slate-200 antialiased font-sans min-h-screen flex flex-col justify-between">
     
@@ -177,6 +273,26 @@ async def dashboard():
                 <div class="bg-surface border border-border-subtle rounded-xl p-3.5"><span class="text-[11px] font-mono text-slate-400 uppercase block">Cost Gateway</span><span id="costStatus" class="text-xs font-semibold text-slate-300 mt-1 block">Idle</span></div>
             </div>
 
+            <!-- Latency Budget Gauge -->
+            <div class="bg-surface border border-border-subtle rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <span id="gaugeDot" class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                        <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Inspection Overhead</span>
+                        <span class="text-[10px] font-mono text-slate-600 border border-border-subtle px-1.5 py-0.5 rounded">vs 50ms Budget</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span id="gaugeLabel" class="text-xs font-mono text-slate-500">—</span>
+                        <span id="gaugePct" class="text-xs font-mono font-bold text-slate-500">—</span>
+                    </div>
+                </div>
+                <div class="gauge-track"><div id="gaugeFill" class="gauge-fill"></div></div>
+                <div class="flex justify-between mt-1.5">
+                    <span class="text-[10px] font-mono text-slate-600">0ms</span>
+                    <span class="text-[10px] font-mono text-slate-600">50ms threshold</span>
+                </div>
+            </div>
+
             <div class="bg-surface border border-border-subtle rounded-xl p-5 flex-1 flex flex-col justify-between glow">
                 <div>
                     <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
@@ -210,10 +326,43 @@ async def dashboard():
                 const response = await fetch('/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
                 const data = await response.json();
 
-                document.getElementById('latencyBadge').innerText = `Latency: ${data.metrics?.latency_ms || 0}ms`;
+                const latencyMs = data.metrics?.latency_ms || 0;
+                const inspectionMs = data.metrics?.inspection_ms || 0;
+                document.getElementById('latencyBadge').innerText = `Total: ${latencyMs}ms`;
                 document.getElementById('respStatus').innerText = data.checks?.responsibility || 'PASSED';
                 document.getElementById('perfStatus').innerText = data.checks?.performance || 'Validated';
                 document.getElementById('costStatus').innerText = data.checks?.cost || 'Optimized';
+
+                const BUDGET_MS = 50;
+                const gaugeFill = document.getElementById('gaugeFill');
+                const gaugeLabel = document.getElementById('gaugeLabel');
+                const gaugePct = document.getElementById('gaugePct');
+                const gaugeDot = document.getElementById('gaugeDot');
+
+                const pct = Math.min((inspectionMs / BUDGET_MS) * 100, 100);
+                const remaining = Math.max(BUDGET_MS - inspectionMs, 0).toFixed(2);
+
+                gaugeFill.style.width = '0%';
+                gaugeFill.className = 'gauge-fill';
+
+                setTimeout(() => {
+                    gaugeFill.style.width = pct + '%';
+                    if (pct < 50) {
+                        gaugeFill.classList.add('safe');
+                        gaugeDot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400 scanning-dot';
+                        gaugePct.className = 'text-xs font-mono font-bold text-emerald-400';
+                    } else if (pct < 80) {
+                        gaugeFill.classList.add('warn');
+                        gaugeDot.className = 'h-1.5 w-1.5 rounded-full bg-amber-400 scanning-dot';
+                        gaugePct.className = 'text-xs font-mono font-bold text-amber-400';
+                    } else {
+                        gaugeFill.classList.add('danger');
+                        gaugeDot.className = 'h-1.5 w-1.5 rounded-full bg-rose-400 scanning-dot';
+                        gaugePct.className = 'text-xs font-mono font-bold text-rose-400';
+                    }
+                    gaugeLabel.innerText = inspectionMs + 'ms scan | ' + remaining + 'ms headroom';
+                    gaugePct.innerText = `${pct.toFixed(1)}% of budget`;
+                }, 50);
 
                 if (data.status === 'APPROVED') {
                     actionBadge.className = 'text-xs font-mono font-bold px-3 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/60';
@@ -233,4 +382,4 @@ async def dashboard():
     </script>
 </body>
 </html>
-    """, status_code=200)
+    """, status_code=200, headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"})
