@@ -762,11 +762,27 @@ async def policy_page():
             setTimeout(() => el.classList.remove('slide-in'), 400);
         }
 
-        function selectProfile(key) {
+        async function selectProfile(key) {
             currentProfile = key;
             updateProfileCards(key);
-            // Apply immediately
-            applyChanges();
+            setSyncState('pending');
+            try {
+                // Switch to the new profile with NO overrides so the profile's
+                // own defaults (on_pii, on_bias, etc.) are used cleanly.
+                const res = await fetch('/v1/policy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile: key, overrides: {} })
+                });
+                const data = await res.json();
+                // Repopulate UI controls from the real profile defaults
+                populateControls(data.policy);
+                renderJson(data.policy);
+                setSyncState('synced');
+                document.getElementById('headerStatus').innerText = 'Active: ' + data.policy.name;
+            } catch(e) {
+                setSyncState('error');
+            }
         }
 
         function scheduleOverrideUpdate() {
